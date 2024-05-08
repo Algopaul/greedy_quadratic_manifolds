@@ -2,7 +2,7 @@
 import jax
 import jax.numpy as jnp
 from jax.lax import fori_loop
-from datageneration import generate_advecting_pulse
+from greedyqm.datageneration import generate_advecting_pulse
 from absl import app
 from absl import flags
 from absl import logging
