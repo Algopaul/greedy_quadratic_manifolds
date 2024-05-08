@@ -21,7 +21,7 @@ pip install -e .
 ```
 
 ### Usage
-The greedy column selection is demonstrated in the notebook `greedy_quad_manifolds.ipynb`; alternatively, the code can be run as follows from the command line:
+The greedy column selection is demonstrated in the **notebook** [greedy_quadratic_manifolds.ipynb](greedy_quadratic_manifolds.ipynb); alternatively, the code can be run as follows from the command line:
 ```bash
 python greedyqm/quadmani.py
 ```
