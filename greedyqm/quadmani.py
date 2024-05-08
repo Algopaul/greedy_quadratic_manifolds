@@ -15,7 +15,8 @@ N_VECTORS_TO_CHECK = flags.DEFINE_integer(
     'n_vectors_to_check', 200,
     'Number of vectors to check in the greedy algorithm')
 
-REG_MAGNITUDE = flags.DEFINE_float('reg_magnitude', 1e-6, 'Regularization magnitude for least squares problem')
+REG_MAGNITUDE = flags.DEFINE_float(
+    'reg_magnitude', 1e-6, 'Regularization magnitude for least squares problem')
 
 
 def default_feature_map(reduced_data_points):
@@ -82,13 +83,15 @@ def lstsq_l2(A, B, reg_magnitude=None):
   return x, resid
 
 
-def greedy_step_fast(idx_in_pre, idx_out_pre, sigma, VT, imax, nonlinear_map, reg_magnitude):
+def greedy_step_fast(idx_in_pre, idx_out_pre, sigma, VT, imax, nonlinear_map,
+                     reg_magnitude):
 
   def body_fun(i, errors):
     idx_in = jnp.hstack((idx_in_pre, idx_out_pre[i]))
     idx_out = jnp.delete(idx_consider, i, assume_unique_indices=True)
     errors = errors.at[i].set(
-        compute_error_fast(idx_in, idx_out, sigma, VT, nonlinear_map, reg_magnitude))
+        compute_error_fast(idx_in, idx_out, sigma, VT, nonlinear_map,
+                           reg_magnitude))
     return errors
 
   n_consider = jnp.minimum(imax, len(idx_out_pre))
