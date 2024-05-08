@@ -4,6 +4,7 @@ from jax.lax import fori_loop
 
 jax.config.update('jax_enable_x64', True)
 
+
 def default_feature_map(reduced_data_points):
   r = reduced_data_points.shape[0]
   return jnp.concatenate(
@@ -14,7 +15,7 @@ def default_feature_map(reduced_data_points):
 
 def quadmani_greedy(data_points, r=20, n_vectors_to_check=200, feature_map=default_feature_map):
   shift_value = jnp.mean(data_points, axis=1)
-  Phi, Sigma, PsiT = jnp.linalg.svd(shift_data(data_points, -shift_value))
+  Phi, Sigma, PsiT = jnp.linalg.svd(shift_data(data_points, shift_value))
   idx_in = jnp.arange(0, 0, 1)
   idx_out = jnp.arange(0, len(Sigma), 1)
   idx_in, idx_out = greedy_step_fast(
@@ -89,13 +90,13 @@ def shift_data(data_points, shift):
 
 
 def linear_reduce(V, data_points, shift_value):
-  return V.T @ shift_data(data_points, -shift_value)
+  return V.T @ shift_data(data_points, shift_value)
 
 
 def lift_quadratic(V, W, shift_value, reduced_data_points, feature_map=default_feature_map):
   linear_part = V @ reduced_data_points
   quadratic_part = W @ feature_map(reduced_data_points)
-  return shift_data(linear_part + quadratic_part, shift_value)
+  return shift_data(linear_part + quadratic_part, -shift_value)
 
 
 if __name__ == "__main__":
@@ -107,15 +108,15 @@ if __name__ == "__main__":
   N_SPACE_SAMPLES = 2**12
 
   def gaussian_pulse(x):
-    return 1 / jnp.sqrt(PULSE_WIDTH*jnp.pi) * jnp.exp(-((x-PULSE_SHIFT))**2 / PULSE_WIDTH)
+    return 1 / jnp.sqrt(PULSE_WIDTH * jnp.pi) * jnp.exp(-((x - PULSE_SHIFT))**2 / PULSE_WIDTH)
 
   def generate_data():
     t = jnp.linspace(0, FINAL_TIME, N_TIME_SAMPLES)
 
     def f(x, ti):
-      u = gaussian_pulse(x-SPEED * ti)
+      u = gaussian_pulse(x - SPEED * ti)
       return x, u
-    
+
     _, data_points = jax.lax.scan(f, x, t)
     return data_points.T
 
@@ -126,5 +127,5 @@ if __name__ == "__main__":
   V, W, shift_value = quadmani_greedy(data_points)
   reduced_points = linear_reduce(V, test_points, shift_value)
   reconstructed = lift_quadratic(V, W, shift_value, reduced_points)
-  assert jnp.linalg.norm(reconstructed-test_points)/jnp.linalg.norm(test_points) < 5e-7
-
+  assert jnp.linalg.norm(reconstructed - test_points) / \
+      jnp.linalg.norm(test_points) < 5e-7
