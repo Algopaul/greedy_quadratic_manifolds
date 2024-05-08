@@ -1,0 +1,1 @@
+"""Computation of quadratic manifolds"""
