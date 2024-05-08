@@ -18,6 +18,9 @@ N_VECTORS_TO_CHECK = flags.DEFINE_integer(
 REG_MAGNITUDE = flags.DEFINE_float(
     'reg_magnitude', 1e-6, 'Regularization magnitude for least squares problem')
 
+IDX_IN = flags.DEFINE_multi_integer(
+    'idx_in', [], 'Indices of the columns to be included in the reduced basis')
+
 
 def default_feature_map(reduced_data_points):
   r = reduced_data_points.shape[0]
@@ -30,6 +33,7 @@ def quadmani_greedy(data_points,
                     r=None,
                     n_vectors_to_check=None,
                     reg_magnitude=None,
+                    idx_in=None,
                     feature_map=default_feature_map):
   if r is None:
     r = REDUCED_DIMENSION.value
@@ -37,21 +41,15 @@ def quadmani_greedy(data_points,
     n_vectors_to_check = N_VECTORS_TO_CHECK.value
   if reg_magnitude is None:
     reg_magnitude = REG_MAGNITUDE.value
+  if idx_in is None:
+    idx_in = jnp.asarray(IDX_IN.value, dtype=jnp.int32)
   shift_value = jnp.mean(data_points, axis=1)
   phi, sigma, psit = jnp.linalg.svd(shift_data(data_points, shift_value))
-  idx_in = jnp.arange(0, 0, 1)
-  idx_out = jnp.arange(0, len(sigma), 1)
-  idx_in, idx_out = greedy_step_fast(
-      idx_in,
-      idx_out,
-      sigma,
-      psit,
-      imax=n_vectors_to_check,
-      nonlinear_map=feature_map,
-      reg_magnitude=reg_magnitude,
-  )
-  logging.info('Greedy step 1. Selected column %s', idx_in)
-  for i in range(r - 1):
+  print(idx_in)
+  idx_out = jnp.setdiff1d(
+      jnp.arange(0, len(sigma), 1), idx_in, assume_unique=True)
+  i = 1
+  while len(idx_in) < r:
     idx_in, idx_out = greedy_step_fast(
         idx_in,
         idx_out,
@@ -61,7 +59,8 @@ def quadmani_greedy(data_points,
         nonlinear_map=feature_map,
         reg_magnitude=reg_magnitude,
     )
-    logging.info('Greedy step %i. Selected columns %s', i + 2, idx_in)
+    logging.info('Greedy step %i. Selected columns %s', i, idx_in)
+    i += 1
   V = phi[:, idx_in]
   sigma_1, sigma_2 = sigma[idx_in], sigma[idx_out]
   V1T, V2T = psit[idx_in, :], psit[idx_out, :]
