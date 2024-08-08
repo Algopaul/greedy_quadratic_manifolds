@@ -27,7 +27,7 @@ python greedyqm/quadmani.py
 ```
 This computes a quadratic manifold of dimension 20 for the linear advection dataset. Parameters are passed as flags, e.g.
 ```bash
-python greedyqm/quadmani.py --reduced_dimension=10 --n_vectors_to_check=100 --reg_magnitude=1e-8
+python greedyqm/quadmani.py --reduced_dimension=20 --n_vectors_to_check=200 --reg_magnitude=1e-8
 ```
 This computes a quadratic manifold of dimension 10 for the linear advection dataset with a regularization magnitude of 1e-8 and chooses the next column from the next 100 singular vectors.
 
