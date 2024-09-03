@@ -6,6 +6,7 @@ from greedyqm.datageneration import generate_advecting_pulse
 from absl import app
 from absl import flags
 from absl import logging
+from collections import namedtuple
 
 jax.config.update('jax_enable_x64', True)
 
@@ -21,6 +22,8 @@ REG_MAGNITUDE = flags.DEFINE_float(
 IDX_IN = flags.DEFINE_multi_integer(
     'idx_in', [], 'Indices of the columns to be included in the reduced basis')
 
+ShiftedSVD = namedtuple('ShiftedSVD', ['U', 'S', 'VT', 'shift'])
+
 
 def default_feature_map(reduced_data_points):
   r = reduced_data_points.shape[0]
@@ -29,12 +32,14 @@ def default_feature_map(reduced_data_points):
       axis=0)
 
 
-def quadmani_greedy(data_points,
-                    r=None,
-                    n_vectors_to_check=None,
-                    reg_magnitude=None,
-                    idx_in=None,
-                    feature_map=default_feature_map):
+def quadmani_greedy(
+    data_points,
+    r=None,
+    n_vectors_to_check=None,
+    reg_magnitude=None,
+    idx_in=None,
+    feature_map=default_feature_map,
+):
   if r is None:
     r = REDUCED_DIMENSION.value
   if n_vectors_to_check is None:
@@ -45,6 +50,34 @@ def quadmani_greedy(data_points,
     idx_in = jnp.asarray(IDX_IN.value, dtype=jnp.int32)
   shift_value = jnp.mean(data_points, axis=1)
   phi, sigma, psit = jnp.linalg.svd(shift_data(data_points, shift_value))
+  shifted_svd = ShiftedSVD(phi, sigma, psit, shift_value)
+  return quadmani_greedy_from_svd(
+      shifted_svd,
+      r,
+      n_vectors_to_check,
+      reg_magnitude,
+      idx_in,
+      feature_map,
+  )
+
+
+def quadmani_greedy_from_svd(
+    shifted_svd,
+    r=None,
+    n_vectors_to_check=None,
+    reg_magnitude=None,
+    idx_in=None,
+    feature_map=default_feature_map,
+):
+  if r is None:
+    r = REDUCED_DIMENSION.value
+  if n_vectors_to_check is None:
+    n_vectors_to_check = N_VECTORS_TO_CHECK.value
+  if reg_magnitude is None:
+    reg_magnitude = REG_MAGNITUDE.value
+  if idx_in is None:
+    idx_in = jnp.asarray(IDX_IN.value, dtype=jnp.int32)
+  phi, sigma, psit, shift_value = shifted_svd
   print(idx_in)
   idx_out = jnp.setdiff1d(
       jnp.arange(0, len(sigma), 1), idx_in, assume_unique=True)
